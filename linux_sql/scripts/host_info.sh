@@ -12,7 +12,7 @@ if [ "$#" -ne 5 ]; then
 fi
 
 specs=$(lscpu)
-hostname=$(hostname -f)
+hostname=$(hostname)
 
 cpu_number=$(echo "$specs" | grep "^CPU(s):" | awk '{print $2}')
 cpu_architecture=$(echo "$specs" | grep "^Architecture:" | awk '{print $2}')
@@ -20,9 +20,9 @@ cpu_model=$(echo "$specs" | grep "^Model name" | awk '{print $3,$4,$5,$6,$7}')
 cpu_mhz=$(echo "$specs" | grep "^CPU MHz:" | awk '{print $3}')
 l2_cache=$(echo "$specs" | grep "^L2 cache:" | awk '{print $3}' | sed 's/[^0-9]//g')
 timestamp=$(vmstat -t | awk {'print $18 $19'} | tail -n1)
-total_mem=$(echo "$vmstat_mb" | awk '{print $4}'| tail -n1 | xargs)
 
-id="(SELECT id FROM host_info WHERE hostname='$hostname')";
+total_mem="(SELECT total_mem FROM host_info WHERE hostname LIKE '$hostname'%')";
+id="(SELECT id FROM host_info WHERE hostname like '$hostname'%)";
 
 insert_stmt="INSERT INTO host_info(id, hostname, cpu_number, cpu_architecture, cpu_model, cpu_mhz, l2_cache, timestamp, total_mem) VALUES ($id, $hostname, $cpu_number, $cpu_architecture, $cpu_model, $cpu_mhz, $l2_cache, '$timestamp', $total_mem);
 

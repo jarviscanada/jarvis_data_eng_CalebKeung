@@ -12,7 +12,7 @@ if [ "$#" -ne 5 ]; then
 fi
 
 vmstat_mb=$(vmstat --unit M)
-hostname=$(hostname -f)
+hostname=$(hostname)
 
 memory_free=$(echo "$vmstat_mb" | awk '{print $4}'| tail -n1 | xargs)
 cpu_idle=$(echo "$vmstat_mb" | awk '{print $15}' | tail -n1)
@@ -20,11 +20,11 @@ cpu_kernel=$(echo "$vmstat_mb" | awk '{print $14}' | tail -n1)
 disk_io=$(vmstat -d | awk '{print $10}' | tail -n1)
 disk_available=$(df -BM / | awk {'print $4'} | tail -n1 | sed 's/[^0-9]//g')
 
-timestamp=$(vmstat -t | awk {'print $18 $19'} | tail -n1)
+timestamp=$(vmstat -t | awk {'print $18, $19'} | tail -n1)
 
-host_id="(SELECT id FROM host_info WHERE hostname='$hostname')";
+host_id="(SELECT id FROM host_info WHERE hostname LIKE '$hostname%')";
 
-insert_stmt="INSERT INTO host_usage(timestamp, host_id, memory_free, cpu_idle, cpu_kernel, disk_io, disk_available) VALUES ('$timestamp', $memory_free, $cpu_idle, $cpu_kernel, $disk_io, $disk_available)
+insert_stmt="INSERT INTO host_usage(timestamp, host_id, memory_free, cpu_idle, cpu_kernel, disk_io, disk_available) VALUES ('$timestamp',$host_id, $memory_free, $cpu_idle, $cpu_kernel, $disk_io, $disk_available)";
 
 export PGPASSWORD=$psql_password
 
