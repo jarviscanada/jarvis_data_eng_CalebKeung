@@ -1,3 +1,5 @@
+#! /bin/sh
+
 psql_host=$1
 psql_port=$2
 db_name=$3
@@ -9,20 +11,20 @@ if [ "$#" -ne 5 ]; then
 	exit 1
 fi
 
-vmstat_mb=$(vmstat --unit M)
+specs=$(lscpu)
 hostname=$(hostname -f)
 
-memory_free=$(echo "$vmstat_mb" | awk '{print $4}'| tail -n1 | xargs)
-cpu_idle=$(echo "$vmstat_mb" | awk '{print $15}' | tail -n1)
-cpu_kernel=$(echo "$vmstat_mb" | awk '{print $14}' | tail -n1)
-disk_io=$(vmstat -d | awk '{print $10}' | tail -n1)
-disk_available=$(df -BM / | awk {'print $4'} | tail -n1 | sed 's/[^0-9]//g')
-
+cpu_number=$(echo "$specs" | grep "^CPU(s):" | awk '{print $2}')
+cpu_architecture=$(echo "$specs" | grep "^Architecture:" | awk '{print $2}')
+cpu_model=$(echo "$specs" | grep "^Model name" | awk '{print $3,$4,$5,$6,$7}')
+cpu_mhz=$(echo "$specs" | grep "^CPU MHz:" | awk '{print $3}')
+l2_cache=$(echo "$specs" | grep "^L2 cache:" | awk '{print $3}' | sed 's/[^0-9]//g')
 timestamp=$(vmstat -t | awk {'print $18 $19'} | tail -n1)
+total_mem=$(echo "$vmstat_mb" | awk '{print $4}'| tail -n1 | xargs)
 
-host_id="(SELECT id FROM host_info WHERE hostname='$hostname')";
+id="(SELECT id FROM host_info WHERE hostname='$hostname')";
 
-insert_stmt="INSERT INTO host_usage(timestamp, host_id, memory_free, cpu_idle, cpu_kernel, disk_io, disk_available) VALUES ('$timestamp', $memory_free, $cpu_idle, $cpu_kernel, $disk_io, $disk_available)
+insert_stmt="INSERT INTO host_info(id, hostname, cpu_number, cpu_architecture, cpu_model, cpu_mhz, l2_cache, timestamp, total_mem) VALUES ($id, $hostname, $cpu_number, $cpu_architecture, $cpu_model, $cpu_mhz, $l2_cache, '$timestamp', $total_mem);
 
 export PGPASSWORD=$psql_password
 
